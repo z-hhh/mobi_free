@@ -11,6 +11,7 @@ const CONTROL_POINT_UUID = 0x2AD9;
  */
 export const useBluetooth = () => {
   const [isConnected, setIsConnected] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [stats, setStats] = useState<WorkoutStats>({
     instantSpeed: 0,
     instantCadence: 0,
@@ -26,13 +27,30 @@ export const useBluetooth = () => {
   // 连接设备
   const connect = useCallback(async () => {
     try {
-      const device = await navigator.bluetooth.requestDevice({
-        filters: [{ services: [FTMS_SERVICE_UUID] }],
-        optionalServices: [FTMS_SERVICE_UUID]
-      });
+      setError(null);
+      const api = navigator.bluetooth;
+      if (!window.isSecureContext || !api?.requestDevice) {
+        throw new Error("Web Bluetooth 不可用，请使用 HTTPS/localhost 且浏览器支持该 API。");
+      }
+
+      let device: BluetoothDevice;
+      try {
+        device = await api.requestDevice({
+          filters: [{ services: [FTMS_SERVICE_UUID] }],
+          optionalServices: [FTMS_SERVICE_UUID]
+        });
+      } catch (e) {
+        const isNotFound = e instanceof Error && e.name === 'NotFoundError';
+        if (!isNotFound) throw e;
+        device = await api.requestDevice({
+          acceptAllDevices: true,
+          optionalServices: [FTMS_SERVICE_UUID]
+        });
+      }
 
       const server = await device.gatt?.connect();
       const service = await server?.getPrimaryService(FTMS_SERVICE_UUID);
+      if (!service) throw new Error("未发现 FTMS 服务");
 
       // 1. 运动数据监听
       const dataChar = await service?.getCharacteristic(CROSS_TRAINER_DATA_UUID);
@@ -62,6 +80,7 @@ export const useBluetooth = () => {
         controlCharRef.current = null;
       });
     } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
       console.error("蓝牙连接失败:", err);
     }
   }, []);
@@ -87,5 +106,5 @@ export const useBluetooth = () => {
     }
   }, []);
 
-  return { isConnected, stats, connect, disconnect, setResistance };
+  return { isConnected, stats, error, connect, disconnect, setResistance };
 };

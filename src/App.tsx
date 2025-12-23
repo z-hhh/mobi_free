@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { 
   Activity, 
   Zap, 
@@ -10,57 +10,8 @@ import {
   Minus, 
   Info 
 } from 'lucide-react';
+import { useBluetooth } from './hooks/useBluetooth';
 
-/**
- * --- 协议解析逻辑 (原 ftms-parser.ts 内容) ---
- */
-interface WorkoutStats {
-  instantSpeed: number;
-  instantCadence: number;
-  instantPower: number;
-  resistanceLevel: number;
-  totalDistance: number;
-  kcal: number;
-}
-
-const parseCrossTrainerData = (value: DataView): Partial<WorkoutStats> => {
-  const flags = value.getUint16(0, true);
-  let offset = 2;
-  const result: Partial<WorkoutStats> = {};
-
-  // 位 0: 瞬时速度 (0.01 km/h)
-  if (!(flags & (1 << 0))) {
-    result.instantSpeed = value.getUint16(offset, true) / 100;
-    offset += 2;
-  }
-
-  // 位 2: 瞬时踏频 (0.5 RPM)
-  if (flags & (1 << 2)) {
-    result.instantCadence = value.getUint16(offset, true) / 2;
-    offset += 2;
-  }
-
-  // 位 6: 瞬时功率 (1 Watt)
-  if (flags & (1 << 6)) {
-    result.instantPower = value.getInt16(offset, true);
-    offset += 2;
-  }
-
-  // 位 7: 阻力等级 (0.1 Unit)
-  if (flags & (1 << 7)) {
-    result.resistanceLevel = value.getInt16(offset, true) / 10;
-    offset += 2;
-  }
-
-  return result;
-};
-
-/**
- * --- 常量定义 ---
- */
-const FTMS_SERVICE_UUID = 0x1826;
-const CROSS_TRAINER_DATA_UUID = 0x2ACE;
-const CONTROL_POINT_UUID = 0x2AD9;
 
 /**
  * --- UI 组件 ---
@@ -103,92 +54,22 @@ const ControlButton = ({ children, onClick }: ControlButtonProps) => (
  * --- 主应用组件 ---
  */
 export default function App() {
-  const [isConnected, setIsConnected] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [stats, setStats] = useState<WorkoutStats>({
-    instantSpeed: 0,
-    instantCadence: 0,
-    instantPower: 0,
-    resistanceLevel: 1,
-    totalDistance: 0,
-    kcal: 0
-  });
+  const { isConnected, stats, error, connect, disconnect, setResistance } = useBluetooth();
   const [uiResistance, setUiResistance] = useState(1);
-  
-  const controlCharRef = useRef<BluetoothRemoteGATTCharacteristic | null>(null);
-  const deviceRef = useRef<BluetoothDevice | null>(null);
-
-  // 蓝牙连接
-  const connect = useCallback(async () => {
-    try {
-      setError(null);
-      const api = navigator.bluetooth;
-      if (!window.isSecureContext || !api?.requestDevice) {
-        const detail = !window.isSecureContext
-          ? "请通过 HTTPS 或 localhost 访问页面。"
-          : "请使用支持 Web Bluetooth 的浏览器（如 Chrome）。";
-        throw new Error(`Web Bluetooth 不可用。${detail}`);
-      }
-
-      const device = await api.requestDevice({
-        filters: [{ services: [FTMS_SERVICE_UUID] }],
-        optionalServices: [FTMS_SERVICE_UUID]
-      });
-
-      const server = await device.gatt?.connect();
-      const service = await server?.getPrimaryService(FTMS_SERVICE_UUID);
-
-      // 数据监听通知
-      const dataChar = await service?.getCharacteristic(CROSS_TRAINER_DATA_UUID);
-      await dataChar?.startNotifications();
-      dataChar?.addEventListener('characteristicvaluechanged', (e: Event) => {
-        const char = e.target as BluetoothRemoteGATTCharacteristic;
-        const dv = char.value;
-        if (!dv) return;
-        const newData = parseCrossTrainerData(dv);
-        setStats(prev => ({ ...prev, ...newData }));
-      });
-
-      // 获取控制点并启用 Indication
-      const ctrlChar = await service?.getCharacteristic(CONTROL_POINT_UUID);
-      await ctrlChar?.startNotifications();
-      controlCharRef.current = ctrlChar || null;
-
-      // 握手请求控制权
-      await ctrlChar?.writeValue(new Uint8Array([0x00]));
-
-      deviceRef.current = device;
-      setIsConnected(true);
-
-      device.addEventListener('gattserverdisconnected', () => {
-        setIsConnected(false);
-        controlCharRef.current = null;
-      });
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
-      console.error("蓝牙连接错误:", err);
-    }
-  }, []);
-
-  const disconnect = useCallback(() => {
-    deviceRef.current?.gatt?.disconnect();
-  }, []);
 
   // 设置阻力逻辑
   const updateResistance = useCallback(async (level: number) => {
-    if (!controlCharRef.current) return;
     const safeLevel = Math.min(Math.max(level, 1), 24);
     const rawValue = Math.round(safeLevel * 10);
     
     try {
-      const command = new Uint8Array([0x04, rawValue & 0xFF, (rawValue >> 8) & 0xFF]);
-      await controlCharRef.current.writeValue(command);
+      await setResistance(rawValue / 10);
       setUiResistance(safeLevel);
       if ('vibrate' in navigator) navigator.vibrate(50);
     } catch (e) {
       console.error("设置阻力失败", e);
     }
-  }, []);
+  }, [setResistance]);
 
   const handleManualAdjust = (delta: number) => {
     updateResistance(uiResistance + delta);
