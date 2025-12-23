@@ -84,41 +84,38 @@ export const parseCrossTrainerData = (value: DataView): Partial<WorkoutStats> =>
     offset += 2;
   }
 
-  // Stride Count (Bit 4)
+  // 5. Avg Cadence (Bit 4) (nRF: Avg Step Rate)
   if (flags & (1 << 4)) {
+    // result.avgCadence = getUint16BE(value, offset);
     offset += 2;
   }
 
   // Elevation (Bit 5)
-  if (flags & (1 << 5)) {
-    offset += 2;
-  }
+  if (flags & (1 << 5)) offset += 2;
 
   // Inclination (Bit 6)
-  if (flags & (1 << 6)) {
-    offset += 2;
-  }
+  if (flags & (1 << 6)) offset += 2;
 
-  // Resistance Level (Bit 7) -> Mapped to Power based on trace?
-  // Trace showed 00 C0 (192) at this slot?
-  // Let's check sequence: Spd(2)+Avg(2)+Dist(3)+Step(2)+Stride(2) = 11 bytes.
-  // Flags(2) + 11 = 13.
-  // Next fields?
-  // If bit 7 is set: 2 bytes.
+  // Stride Count (Bit 7) (nRF: Stride Count)
+  // Trace: 00 82 (130). Stride count?
+  // Previous confusion: Thought this was Resistance.
   if (flags & (1 << 7)) {
-    // This looks like where dynamic power was.
-    result.instantPower = getUint16BE(value, offset);
     offset += 2;
   }
 
-  // Instant Power (Bit 8) -> The fixed F0 value
+  // 8. Resistance Level (Bit 8)
+  // Trace: 00 F0 (240). Matches nRF "240". 
+  // Map to Resistance Level / 10 -> 24.
   if (flags & (1 << 8)) {
-    // Skip fixed junk
+    const raw = getUint16BE(value, offset);
+    result.resistanceLevel = raw / 10;
     offset += 2;
   }
 
-  // Avg Power (Bit 9)
+  // 9. Instant Power (Bit 9)
+  // Trace: 00 C0 (192). Matches nRF "212" (Power).
   if (flags & (1 << 9)) {
+    result.instantPower = getUint16BE(value, offset);
     offset += 2;
   }
 

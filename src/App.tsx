@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import {
   Activity,
   Zap,
@@ -66,6 +66,15 @@ const formatTime = (seconds: number) => {
 export default function App() {
   const { isConnected, stats, error, connect, disconnect, setResistance } = useBluetooth();
   const [uiResistance, setUiResistance] = useState(1);
+
+  // 双向同步阻力
+  useEffect(() => {
+    // 如果机器返回了有效阻力值，且与 UI 不一致，且当前不在拖动状态(简单判断)
+    // 这里直接同步，因为 stats 更新频率适中
+    if (stats.resistanceLevel && stats.resistanceLevel !== uiResistance) {
+      setUiResistance(Math.round(stats.resistanceLevel));
+    }
+  }, [stats.resistanceLevel, uiResistance]);
 
   // 设置阻力逻辑
   const updateResistance = useCallback(async (level: number) => {
