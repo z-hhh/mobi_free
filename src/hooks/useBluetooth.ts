@@ -75,9 +75,17 @@ export const useBluetooth = () => {
           // 如果 stats.elapsedTime 没动 (即 device report 0), 我们自己加。
           // 但由于 rerender 问题，最好用 useEffect 独立计时。
           // 下面只更新 device 数据，把 time 字段留给 local 覆盖。
-          if (newData.elapsedTime === 0) {
-            delete newData.elapsedTime; // 忽略设备发的 0
+          // 修正速度显示：设备报告的速度值不稳定 (如 51RPM 报 21.4km/h，而 33RPM 报 4.4km/h)。
+          // 我们基于用户认为"正常"的 33RPM -> 4.4km/h (系数 ~0.133) 进行本地重算。
+          // 这样能保证速度与踏频线性对应，体验更平滑。
+          if (newData.instantCadence !== undefined) {
+            newData.instantSpeed = newData.instantCadence * 0.13;
           }
+
+          // 关键修复：始终忽略设备上报的时间，完全依赖本地计时器。
+          // 否则设备不断发的 0 会覆盖本地累加的值，导致时间在 0 和 1 之间跳变。
+          delete newData.elapsedTime;
+
           return { ...prev, ...newData };
         });
       });
