@@ -1,6 +1,6 @@
 # MOBI-FREE 🚴
 
-一个基于 Web Bluetooth API 的莫比椭圆机控制应用，无需安装任何 App，直接在浏览器中使用。
+一个基于 Web Bluetooth API 的莫比椭圆机控制应用，无需安装任何 App，直接在浏览器中使用。（推荐部署自己的版本）
 
 ## ✨ 功能特性
 
