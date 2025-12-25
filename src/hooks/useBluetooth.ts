@@ -32,7 +32,7 @@ export const useBluetooth = () => {
       setError(null);
       const api = navigator.bluetooth;
       if (!window.isSecureContext || !api?.requestDevice) {
-        throw new Error("Web Bluetooth 不可用，请使用 HTTPS/localhost 且浏览器支持该 API。");
+        throw new Error("Web Bluetooth API 不可用。请使用支持的浏览器（Chrome、Edge、Opera）访问，Safari 不支持此功能。");
       }
 
       let device: BluetoothDevice;
