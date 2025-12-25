@@ -230,7 +230,7 @@ export default function App() {
               <Info className="text-blue-500 w-6 h-6 shrink-0 mt-0.5" />
               <div className="text-sm text-blue-200/60 leading-relaxed">
                 <p className="font-bold text-blue-400 mb-1 tracking-tight">连接说明</p>
-                请确保您的椭圆机处于开机状态，且未被其他 App（如官方 App 或 Zwift）连接。点击上方按钮扫描并选择您的设备即可开始。
+                请确保您的椭圆机处于开机状态，且未被其他 App（如官方 App）连接。点击上方按钮扫描并选择您的设备即可开始（需要同意蓝牙权限）。
               </div>
             </div>
           )
