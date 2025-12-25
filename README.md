@@ -15,7 +15,7 @@
 ### 环境要求
 
 - Node.js 16+
-- 支持 Web Bluetooth 的浏览器（Chrome、Edge、Opera）
+- 支持 Web Bluetooth 的浏览器（Chrome、Edge、Opera，iOS 用户可使用 Bluefy）
 - HTTPS 或 localhost 环境
 
 ### 安装运行
