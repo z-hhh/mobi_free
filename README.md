@@ -39,6 +39,71 @@ npm run build
 4. 选择你的设备并配对
 5. 开始运动，实时查看数据并调节阻力
 
+## 🌐 部署到 GitHub Pages
+
+### Fork 并部署到自己的 GitHub Pages
+
+1. **Fork 本仓库**
+   - 点击页面右上角的 **Fork** 按钮
+   - 将项目 fork 到你的 GitHub 账号
+
+2. **启用 GitHub Pages**
+   - 进入你 fork 的仓库
+   - 点击 **Settings** → **Pages**
+   - 在 **Source** 下选择 **GitHub Actions**
+
+3. **创建部署工作流**
+   - 在你的仓库中创建文件 `.github/workflows/deploy.yml`
+   - 复制以下内容：
+
+```yaml
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: 'npm'
+      - run: npm ci
+      - run: npm run build
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
+```
+
+4. **推送代码**
+   - 提交并推送 `.github/workflows/deploy.yml` 文件
+   - GitHub Actions 会自动构建并部署
+
+5. **访问你的站点**
+   - 部署完成后，访问 `https://<你的用户名>.github.io/mobi_free`
+
+> **注意**：GitHub Pages 自动提供 HTTPS，满足 Web Bluetooth API 的要求。
+
 ## 🌐 部署到 Cloudflare Pages
 
 ### 方式一：Git 集成（推荐）
