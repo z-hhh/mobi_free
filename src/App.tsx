@@ -127,6 +127,21 @@ export default function App() {
       </header>
 
       <main className="w-full space-y-6">
+        {/* 开源部署提示 */}
+        <div className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-blue-500/20 rounded-3xl p-4 flex gap-3 items-center">
+          <Info className="text-blue-400 w-5 h-5 shrink-0" />
+          <div className="text-sm text-blue-200/80 leading-relaxed flex-1">
+            <span className="font-bold text-blue-300">代码开源</span>，推荐部署自己的版本
+          </div>
+          <a
+            href="https://github.com/z-hhh/mobi_free?tab=readme-ov-file#-%E9%83%A8%E7%BD%B2%E5%88%B0-github-pages"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="px-4 py-1.5 bg-blue-500/20 hover:bg-blue-500/30 border border-blue-400/30 rounded-full text-xs font-bold text-blue-300 hover:text-blue-200 transition-all whitespace-nowrap"
+          >
+            查看教程
+          </a>
+        </div>
         {error && (
           <div className="bg-rose-500/10 border border-rose-500/20 rounded-3xl p-6 flex gap-4 items-start">
             <Info className="text-rose-500 w-6 h-6 shrink-0 mt-0.5" />
