@@ -10,7 +10,6 @@ import {
   Minus,
   Info,
   Timer,
-  Heart,
   Flame,
   MapPin
 } from 'lucide-react';
@@ -171,12 +170,6 @@ export default function App() {
             unit="KM"
             icon={<MapPin className="text-pink-400 w-4 h-4" />}
           />
-          <StatCard
-            title="心率"
-            value={stats.heartRate > 0 ? stats.heartRate : '--'}
-            unit="BPM"
-            icon={<Heart className="text-red-500 w-4 h-4" />}
-          />
         </div>
 
         {/* 阻力控制面板 */}
@@ -226,23 +219,25 @@ export default function App() {
         </div>
 
         {/* 帮助信息 */}
-        {!isConnected && (
-          <div className="bg-blue-500/5 border border-blue-500/10 rounded-3xl p-6 flex gap-4 items-start">
-            <Info className="text-blue-500 w-6 h-6 shrink-0 mt-0.5" />
-            <div className="text-sm text-blue-200/60 leading-relaxed">
-              <p className="font-bold text-blue-400 mb-1 tracking-tight">连接说明</p>
-              请确保您的椭圆机处于开机状态，且未被其他 App（如官方 App 或 Zwift）连接。点击上方按钮扫描并选择您的设备即可开始。
+        {
+          !isConnected && (
+            <div className="bg-blue-500/5 border border-blue-500/10 rounded-3xl p-6 flex gap-4 items-start">
+              <Info className="text-blue-500 w-6 h-6 shrink-0 mt-0.5" />
+              <div className="text-sm text-blue-200/60 leading-relaxed">
+                <p className="font-bold text-blue-400 mb-1 tracking-tight">连接说明</p>
+                请确保您的椭圆机处于开机状态，且未被其他 App（如官方 App 或 Zwift）连接。点击上方按钮扫描并选择您的设备即可开始。
+              </div>
             </div>
-          </div>
-        )}
-      </main>
+          )
+        }
+      </main >
 
       {/* 页脚 */}
-      <footer className="w-full mt-12 mb-8 text-center">
+      < footer className="w-full mt-12 mb-8 text-center" >
         <p className="text-zinc-700 text-[10px] font-bold uppercase tracking-[0.2em]">
           Powered by Web Bluetooth API & Open Source
         </p>
-      </footer>
-    </div>
+      </footer >
+    </div >
   );
 }
