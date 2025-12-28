@@ -1,129 +1,433 @@
-import { useState, useRef, useCallback } from 'react';
-import { parseCrossTrainerData } from '../utils/ftms-parser';
-import type { WorkoutStats } from '../utils/ftms-parser';
-
-const FTMS_SERVICE_UUID = 0x1826;
-const CROSS_TRAINER_DATA_UUID = 0x2ACE;
-const CONTROL_POINT_UUID = 0x2AD9;
+import { useEffect, useRef, useState } from 'react';
 
 /**
- * Web Bluetooth API 封装 Hook
+ * Debug logging utility with timestamp and log level
+ */
+const createLogger = (module: string) => ({
+  debug: (message: string, data?: any) => {
+    const timestamp = new Date().toISOString();
+    console.log(`[${timestamp}] [${module}] DEBUG: ${message}`, data || '');
+  },
+  info: (message: string, data?: any) => {
+    const timestamp = new Date().toISOString();
+    console.info(`[${timestamp}] [${module}] INFO: ${message}`, data || '');
+  },
+  warn: (message: string, data?: any) => {
+    const timestamp = new Date().toISOString();
+    console.warn(`[${timestamp}] [${module}] WARN: ${message}`, data || '');
+  },
+  error: (message: string, error?: any) => {
+    const timestamp = new Date().toISOString();
+    console.error(`[${timestamp}] [${module}] ERROR: ${message}`, error || '');
+  },
+});
+
+const logger = createLogger('useBluetooth');
+
+/**
+ * Custom hook for managing Bluetooth connections
+ * Provides connection state management, device discovery, and error handling
  */
 export const useBluetooth = () => {
   const [isConnected, setIsConnected] = useState(false);
+  const [isScanning, setIsScanning] = useState(false);
+  const [devices, setDevices] = useState<any[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const [stats, setStats] = useState<WorkoutStats>({
-    instantSpeed: 0,
-    instantCadence: 0,
-    instantPower: 0,
-    resistanceLevel: 1,
-    totalDistance: 0,
-    kcal: 0,
-    heartRate: 0,
-    elapsedTime: 0
+  const [connectionStatus, setConnectionStatus] = useState<'idle' | 'connecting' | 'connected' | 'disconnected' | 'error'>('idle');
+  
+  const bluetoothDeviceRef = useRef<any>(null);
+  const bluetoothServerRef = useRef<any>(null);
+  const gattCharacteristicRef = useRef<any>(null);
+  const scanAbortControllerRef = useRef<AbortController | null>(null);
+
+  /**
+   * Initialize Bluetooth with error handling
+   */
+  useEffect(() => {
+    logger.info('useBluetooth hook mounted');
+    
+    // Check if Bluetooth is supported
+    if (!navigator.bluetooth) {
+      const errorMsg = 'Bluetooth API is not supported in this browser';
+      logger.error(errorMsg);
+      setError(errorMsg);
+      setConnectionStatus('error');
+      return;
+    }
+
+    logger.info('Bluetooth API is available');
+
+    return () => {
+      logger.info('useBluetooth hook unmounting, cleaning up...');
+      // Cleanup on unmount
+      if (scanAbortControllerRef.current) {
+        scanAbortControllerRef.current.abort();
+      }
+    };
+  }, []);
+
+  /**
+   * Scan for available Bluetooth devices
+   */
+  const scanDevices = async (filters?: any[]) => {
+    try {
+      logger.info('Starting Bluetooth device scan', { filters });
+      setIsScanning(true);
+      setError(null);
+      scanAbortControllerRef.current = new AbortController();
+
+      const options = filters ? { filters } : { acceptAllDevices: true };
+      
+      logger.debug('Scan options:', options);
+
+      const device = await navigator.bluetooth!.requestDevice({
+        ...options,
+        optionalServices: ['generic_access', 'generic_attribute'],
+      });
+
+      logger.info('Device selected', { 
+        name: device.name, 
+        id: device.id,
+        paired: device.paired,
+      });
+
+      bluetoothDeviceRef.current = device;
+      setDevices([device]);
+      setIsScanning(false);
+      
+      return device;
+    } catch (err: any) {
+      logger.error('Error during device scan', {
+        message: err.message,
+        name: err.name,
+        stack: err.stack,
+      });
+      setIsScanning(false);
+      setError(err.message || 'Failed to scan for devices');
+      setConnectionStatus('error');
+      throw err;
+    }
+  };
+
+  /**
+   * Connect to a Bluetooth device
+   */
+  const connect = async (device?: any) => {
+    try {
+      const targetDevice = device || bluetoothDeviceRef.current;
+      
+      if (!targetDevice) {
+        const errorMsg = 'No device selected. Please scan for devices first.';
+        logger.error(errorMsg);
+        setError(errorMsg);
+        setConnectionStatus('error');
+        throw new Error(errorMsg);
+      }
+
+      logger.info('Attempting to connect to device', {
+        deviceName: targetDevice.name,
+        deviceId: targetDevice.id,
+      });
+      
+      setConnectionStatus('connecting');
+      setError(null);
+
+      // Connect to GATT server
+      logger.debug('Requesting GATT server connection');
+      const server = await targetDevice.gatt.connect();
+      bluetoothServerRef.current = server;
+      
+      logger.info('Connected to GATT server', {
+        deviceName: targetDevice.name,
+        connected: server.connected,
+      });
+
+      setIsConnected(true);
+      setConnectionStatus('connected');
+      
+      // Listen for disconnection
+      if (targetDevice.gatt.onconnectionstatechanged) {
+        targetDevice.addEventListener('gattserverdisconnected', handleDisconnection);
+        logger.debug('Registered disconnection listener');
+      }
+
+      return server;
+    } catch (err: any) {
+      logger.error('Connection failed', {
+        message: err.message,
+        name: err.name,
+        code: err.code,
+        stack: err.stack,
+      });
+      setIsConnected(false);
+      setConnectionStatus('error');
+      setError(err.message || 'Failed to connect to device');
+      throw err;
+    }
+  };
+
+  /**
+   * Handle device disconnection
+   */
+  const handleDisconnection = () => {
+    logger.warn('Device disconnected unexpectedly');
+    setIsConnected(false);
+    setConnectionStatus('disconnected');
+    setError('Device disconnected');
+    bluetoothServerRef.current = null;
+    gattCharacteristicRef.current = null;
+  };
+
+  /**
+   * Disconnect from Bluetooth device
+   */
+  const disconnect = async () => {
+    try {
+      logger.info('Initiating disconnect sequence');
+      
+      if (bluetoothDeviceRef.current?.gatt?.connected) {
+        logger.debug('Disconnecting from GATT server');
+        bluetoothDeviceRef.current.gatt.disconnect();
+        logger.info('Successfully disconnected from device');
+      } else {
+        logger.warn('Device was not connected');
+      }
+
+      setIsConnected(false);
+      setConnectionStatus('disconnected');
+      bluetoothServerRef.current = null;
+      gattCharacteristicRef.current = null;
+      setError(null);
+    } catch (err: any) {
+      logger.error('Error during disconnect', {
+        message: err.message,
+        stack: err.stack,
+      });
+      setError(err.message || 'Failed to disconnect');
+      setConnectionStatus('error');
+      throw err;
+    }
+  };
+
+  /**
+   * Write data to a Bluetooth characteristic
+   */
+  const writeCharacteristic = async (
+    serviceUUID: string,
+    characteristicUUID: string,
+    data: ArrayBuffer | ArrayBufferView
+  ) => {
+    try {
+      if (!isConnected || !bluetoothServerRef.current) {
+        const errorMsg = 'Device is not connected';
+        logger.error(errorMsg);
+        setError(errorMsg);
+        throw new Error(errorMsg);
+      }
+
+      logger.debug('Writing to characteristic', {
+        service: serviceUUID,
+        characteristic: characteristicUUID,
+        dataLength: data.byteLength,
+      });
+
+      const service = await bluetoothServerRef.current.getPrimaryService(serviceUUID);
+      const characteristic = await service.getCharacteristic(characteristicUUID);
+      
+      await characteristic.writeValue(data);
+      
+      logger.info('Successfully wrote to characteristic', {
+        service: serviceUUID,
+        characteristic: characteristicUUID,
+      });
+    } catch (err: any) {
+      logger.error('Error writing to characteristic', {
+        message: err.message,
+        serviceUUID,
+        characteristicUUID,
+        stack: err.stack,
+      });
+      setError(err.message || 'Failed to write to characteristic');
+      setConnectionStatus('error');
+      throw err;
+    }
+  };
+
+  /**
+   * Read data from a Bluetooth characteristic
+   */
+  const readCharacteristic = async (
+    serviceUUID: string,
+    characteristicUUID: string
+  ) => {
+    try {
+      if (!isConnected || !bluetoothServerRef.current) {
+        const errorMsg = 'Device is not connected';
+        logger.error(errorMsg);
+        setError(errorMsg);
+        throw new Error(errorMsg);
+      }
+
+      logger.debug('Reading from characteristic', {
+        service: serviceUUID,
+        characteristic: characteristicUUID,
+      });
+
+      const service = await bluetoothServerRef.current.getPrimaryService(serviceUUID);
+      const characteristic = await service.getCharacteristic(characteristicUUID);
+      const value = await characteristic.readValue();
+      
+      logger.info('Successfully read from characteristic', {
+        service: serviceUUID,
+        characteristic: characteristicUUID,
+        dataLength: value.byteLength,
+      });
+
+      return value;
+    } catch (err: any) {
+      logger.error('Error reading from characteristic', {
+        message: err.message,
+        serviceUUID,
+        characteristicUUID,
+        stack: err.stack,
+      });
+      setError(err.message || 'Failed to read from characteristic');
+      setConnectionStatus('error');
+      throw err;
+    }
+  };
+
+  /**
+   * Listen for notifications from a characteristic
+   */
+  const startNotifications = async (
+    serviceUUID: string,
+    characteristicUUID: string,
+    onNotification: (value: DataView) => void
+  ) => {
+    try {
+      if (!isConnected || !bluetoothServerRef.current) {
+        const errorMsg = 'Device is not connected';
+        logger.error(errorMsg);
+        setError(errorMsg);
+        throw new Error(errorMsg);
+      }
+
+      logger.debug('Starting notifications for characteristic', {
+        service: serviceUUID,
+        characteristic: characteristicUUID,
+      });
+
+      const service = await bluetoothServerRef.current.getPrimaryService(serviceUUID);
+      const characteristic = await service.getCharacteristic(characteristicUUID);
+      
+      await characteristic.startNotifications();
+      
+      characteristic.addEventListener('characteristicvaluechanged', (event: any) => {
+        logger.debug('Received notification', {
+          service: serviceUUID,
+          characteristic: characteristicUUID,
+          dataLength: event.target.value.byteLength,
+        });
+        onNotification(event.target.value);
+      });
+
+      logger.info('Successfully started notifications', {
+        service: serviceUUID,
+        characteristic: characteristicUUID,
+      });
+
+      return characteristic;
+    } catch (err: any) {
+      logger.error('Error starting notifications', {
+        message: err.message,
+        serviceUUID,
+        characteristicUUID,
+        stack: err.stack,
+      });
+      setError(err.message || 'Failed to start notifications');
+      setConnectionStatus('error');
+      throw err;
+    }
+  };
+
+  /**
+   * Stop listening for notifications
+   */
+  const stopNotifications = async (
+    serviceUUID: string,
+    characteristicUUID: string
+  ) => {
+    try {
+      if (!bluetoothServerRef.current) {
+        logger.warn('No active server connection to stop notifications');
+        return;
+      }
+
+      logger.debug('Stopping notifications for characteristic', {
+        service: serviceUUID,
+        characteristic: characteristicUUID,
+      });
+
+      const service = await bluetoothServerRef.current.getPrimaryService(serviceUUID);
+      const characteristic = await service.getCharacteristic(characteristicUUID);
+      
+      await characteristic.stopNotifications();
+      
+      logger.info('Successfully stopped notifications', {
+        service: serviceUUID,
+        characteristic: characteristicUUID,
+      });
+    } catch (err: any) {
+      logger.error('Error stopping notifications', {
+        message: err.message,
+        serviceUUID,
+        characteristicUUID,
+        stack: err.stack,
+      });
+      setError(err.message || 'Failed to stop notifications');
+      throw err;
+    }
+  };
+
+  /**
+   * Clear error state
+   */
+  const clearError = () => {
+    logger.debug('Clearing error state');
+    setError(null);
+  };
+
+  /**
+   * Get current connection info
+   */
+  const getConnectionInfo = () => ({
+    isConnected,
+    device: bluetoothDeviceRef.current ? {
+      name: bluetoothDeviceRef.current.name,
+      id: bluetoothDeviceRef.current.id,
+      paired: bluetoothDeviceRef.current.paired,
+    } : null,
+    status: connectionStatus,
   });
 
-  const controlCharRef = useRef<BluetoothRemoteGATTCharacteristic | null>(null);
-  const deviceRef = useRef<BluetoothDevice | null>(null);
+  return {
+    // State
+    isConnected,
+    isScanning,
+    devices,
+    error,
+    connectionStatus,
 
-  // 连接设备
-  const connect = useCallback(async () => {
-    try {
-      setError(null);
-      const api = navigator.bluetooth;
-      if (!window.isSecureContext || !api?.requestDevice) {
-        throw new Error("Web Bluetooth API 不可用。请使用支持的浏览器（Chrome、Edge、Opera）访问，iOS 用户请使用 Bluefy 浏览器。");
-      }
-
-      let device: BluetoothDevice;
-      try {
-        device = await api.requestDevice({
-          filters: [{ services: [FTMS_SERVICE_UUID] }],
-          optionalServices: [FTMS_SERVICE_UUID]
-        });
-      } catch (e) {
-        const isNotFound = e instanceof Error && e.name === 'NotFoundError';
-        if (!isNotFound) throw e;
-        device = await api.requestDevice({
-          acceptAllDevices: true,
-          optionalServices: [FTMS_SERVICE_UUID]
-        });
-      }
-
-      const server = await device.gatt?.connect();
-      const service = await server?.getPrimaryService(FTMS_SERVICE_UUID);
-      if (!service) throw new Error("未发现 FTMS 服务");
-
-      // 1. 运动数据监听
-      const dataChar = await service?.getCharacteristic(CROSS_TRAINER_DATA_UUID);
-      await dataChar?.startNotifications();
-      dataChar?.addEventListener('characteristicvaluechanged', (e: Event) => {
-        const char = e.target as BluetoothRemoteGATTCharacteristic;
-        const dv = char.value;
-        if (!dv) return;
-
-        const newData = parseCrossTrainerData(dv);
-
-        setStats(prev => {
-          return { ...prev, ...newData };
-        });
-      });
-
-      // 2. 控制点特征值
-      const ctrlChar = await service?.getCharacteristic(CONTROL_POINT_UUID);
-      await ctrlChar?.startNotifications();
-      ctrlChar?.addEventListener('characteristicvaluechanged', (e: Event) => {
-        const char = e.target as BluetoothRemoteGATTCharacteristic;
-        const dv = char.value;
-        if (!dv) return;
-      });
-      controlCharRef.current = ctrlChar || null;
-
-      // 3. 自动请求控制权 (OpCode: 0x00)
-      await ctrlChar?.writeValue(new Uint8Array([0x00]));
-
-      // 4. 启动训练 (OpCode: 0x07 - Start or Resume)
-      await new Promise(resolve => setTimeout(resolve, 100)); // 等待控制权确认
-      await ctrlChar?.writeValue(new Uint8Array([0x07]));
-
-      deviceRef.current = device;
-      setIsConnected(true);
-
-      // 处理意外断连
-      device.addEventListener('gattserverdisconnected', () => {
-        setIsConnected(false);
-        controlCharRef.current = null;
-      });
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
-      console.error("蓝牙连接失败:", err);
-    }
-  }, []);
-
-  // 断开连接
-  const disconnect = useCallback(() => {
-    deviceRef.current?.gatt?.disconnect();
-  }, []);
-
-  // 设置阻力 (0.1 步进处理)
-  const setResistance = useCallback(async (level: number) => {
-    if (!controlCharRef.current) return;
-
-    // 限制阻力范围：10-24 档（机器不接受 9 及以下的值）
-    const clampedLevel = Math.max(10, Math.min(24, Math.round(level)));
-
-    // 直接发送档位值（不乘以 10）
-    // 机器的非标准实现：读取时返回 value*10，写入时直接发送档位
-    const rawValue = clampedLevel;
-    const command = new Uint8Array([0x04, rawValue & 0xFF, (rawValue >> 8) & 0xFF]);
-
-    try {
-      await controlCharRef.current.writeValue(command);
-      if ('vibrate' in navigator) navigator.vibrate(50);
-    } catch (e) {
-      console.error("阻力设置失败:", e);
-    }
-  }, []);
-
-  return { isConnected, stats, error, connect, disconnect, setResistance };
+    // Methods
+    scanDevices,
+    connect,
+    disconnect,
+    writeCharacteristic,
+    readCharacteristic,
+    startNotifications,
+    stopNotifications,
+    clearError,
+    getConnectionInfo,
+  };
 };
