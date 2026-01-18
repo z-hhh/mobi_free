@@ -298,6 +298,9 @@ export default function App() {
         <p className="text-zinc-700 text-[10px] font-bold uppercase tracking-[0.2em] text-center">
           Powered by Web Bluetooth API & Open Source
         </p>
+        <p className="text-zinc-800 text-[9px] font-mono text-center mt-2 opacity-50">
+          Build: {__BUILD_TIME__} | Commit: {__COMMIT_HASH__}
+        </p>
       </footer>
 
       {/* 捐助弹窗 */}
