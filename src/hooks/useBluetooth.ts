@@ -12,6 +12,12 @@ const CONTROL_POINT_UUID = 0x2AD9;
 export const useBluetooth = () => {
   const [isConnected, setIsConnected] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [logs, setLogs] = useState<string[]>([]);
+
+  const log = (msg: string) => {
+    console.log(msg);
+    setLogs(prev => [...prev.slice(-20), `${new Date().toLocaleTimeString()} - ${msg}`]);
+  };
   const [stats, setStats] = useState<WorkoutStats>({
     instantSpeed: 0,
     instantCadence: 0,
@@ -30,6 +36,7 @@ export const useBluetooth = () => {
   const connect = useCallback(async () => {
     try {
       setError(null);
+      log("Checking Bluetooth API...");
       const api = navigator.bluetooth;
       if (!window.isSecureContext || !api?.requestDevice) {
         throw new Error("Web Bluetooth API 不可用。请使用支持的浏览器（Chrome、Edge、Opera）访问，iOS 用户请使用 Bluefy 浏览器。");
@@ -37,24 +44,33 @@ export const useBluetooth = () => {
 
       let device: BluetoothDevice;
       try {
+        log(`Requesting device (Filter: ${FTMS_SERVICE_UUID})...`);
         device = await api.requestDevice({
           filters: [{ services: [FTMS_SERVICE_UUID] }],
           optionalServices: [FTMS_SERVICE_UUID]
         });
       } catch (e) {
+        log(`Standard request failed: ${e}`);
         const isNotFound = e instanceof Error && e.name === 'NotFoundError';
         if (!isNotFound) throw e;
+
+        log("Trying acceptAllDevices...");
         device = await api.requestDevice({
           acceptAllDevices: true,
           optionalServices: [FTMS_SERVICE_UUID]
         });
       }
 
+      log(`Device selected: ${device.name} (${device.id})`);
+      log("Connecting to GATT Server...");
       const server = await device.gatt?.connect();
+
+      log("Getting Primary Service...");
       const service = await server?.getPrimaryService(FTMS_SERVICE_UUID);
       if (!service) throw new Error("未发现 FTMS 服务");
 
       // 1. 运动数据监听
+      log("Getting Data Characteristic...");
       const dataChar = await service?.getCharacteristic(CROSS_TRAINER_DATA_UUID);
       await dataChar?.startNotifications();
       dataChar?.addEventListener('characteristicvaluechanged', (e: Event) => {
@@ -70,6 +86,7 @@ export const useBluetooth = () => {
       });
 
       // 2. 控制点特征值
+      log("Getting Control Characteristic...");
       const ctrlChar = await service?.getCharacteristic(CONTROL_POINT_UUID);
       await ctrlChar?.startNotifications();
       ctrlChar?.addEventListener('characteristicvaluechanged', (e: Event) => {
@@ -88,6 +105,7 @@ export const useBluetooth = () => {
 
       deviceRef.current = device;
       setIsConnected(true);
+      log("Connection successful!");
 
       // 处理意外断连
       device.addEventListener('gattserverdisconnected', () => {
@@ -95,8 +113,16 @@ export const useBluetooth = () => {
         controlCharRef.current = null;
       });
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
-      console.error("蓝牙连接失败:", err);
+      console.error("蓝牙连接失败:", err, JSON.stringify(err));
+
+      let msg = err instanceof Error ? err.message : String(err);
+
+      // Bluefy 特有的模糊错误码 "2" (通常意味着连接失败或被取消)
+      if (msg === "2" || msg.includes("error 2") || (typeof err === "number" && err === 2)) {
+        msg = "连接失败 (Error 2): 请检查蓝牙是否开启，设备是否开机，或尝试重启 Bluefy 浏览器。";
+      }
+
+      setError(msg);
     }
   }, []);
 
@@ -125,5 +151,5 @@ export const useBluetooth = () => {
     }
   }, []);
 
-  return { isConnected, stats, error, connect, disconnect, setResistance };
+  return { isConnected, stats, error, connect, disconnect, setResistance, logs };
 };

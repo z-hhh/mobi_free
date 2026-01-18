@@ -17,6 +17,7 @@ import {
   X
 } from 'lucide-react';
 import { useBluetooth } from './hooks/useBluetooth';
+import { useWakeLock } from './hooks/useWakeLock';
 import alipayQR from './assets/alipay.jpg';
 
 
@@ -67,7 +68,8 @@ const formatTime = (seconds: number) => {
  * --- 主应用组件 ---
  */
 export default function App() {
-  const { isConnected, stats, error, connect, disconnect, setResistance } = useBluetooth();
+  const { isConnected, stats, error, connect, disconnect, setResistance, logs } = useBluetooth();
+  useWakeLock(isConnected); // 仅在连接设备时保持屏幕常亮
   const [uiResistance, setUiResistance] = useState(10);
   const [ignoreRemoteUpdatesUntil, setIgnoreRemoteUpdatesUntil] = useState(0);
   const [showDonation, setShowDonation] = useState(false);
@@ -250,6 +252,27 @@ export default function App() {
             </div>
           )
         }
+
+        {/* 调试日志 (仅在非连接状态或有错误时显示，或者始终显示以帮助调试) */}
+        {!isConnected && (
+          <div className="mt-8 p-4 bg-zinc-900 rounded-2xl border border-zinc-800 text-xs font-mono text-zinc-500 overflow-hidden">
+            <div className="mb-2 font-bold uppercase tracking-wider text-zinc-600 flex justify-between">
+              <span>Debug Log</span>
+              <span className="text-zinc-700">{logs.length} events</span>
+            </div>
+            <div className="h-32 overflow-y-auto space-y-1">
+              {logs.length === 0 ? (
+                <div className="text-zinc-700 italic">No logs yet...</div>
+              ) : (
+                logs.map((log, i) => (
+                  <div key={i} className="break-all border-b border-zinc-800/50 pb-0.5 mb-0.5 last:border-0">
+                    {log}
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        )}
       </main >
 
       {/* 页脚 */}
