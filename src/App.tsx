@@ -74,6 +74,8 @@ export default function App() {
   const [ignoreRemoteUpdatesUntil, setIgnoreRemoteUpdatesUntil] = useState(0);
   const [showDonation, setShowDonation] = useState(false);
 
+  const [isDragging, setIsDragging] = useState(false);
+
   // 初始连接时同步机器阻力值
   useEffect(() => {
     const now = Date.now();
@@ -81,12 +83,14 @@ export default function App() {
     // 1. 机器返回了有效值
     // 2. 当前不在「忽略远程更新」的时间窗口内
     // 3. 值确实不同
-    if (stats.resistanceLevel &&
+    // 4. 用户不在拖拽滑块中
+    if (!isDragging &&
+      stats.resistanceLevel &&
       now > ignoreRemoteUpdatesUntil &&
       stats.resistanceLevel !== uiResistance) {
       setUiResistance(Math.round(stats.resistanceLevel));
     }
-  }, [stats.resistanceLevel, uiResistance, ignoreRemoteUpdatesUntil]);
+  }, [stats.resistanceLevel, uiResistance, ignoreRemoteUpdatesUntil, isDragging]);
 
   // 设置阻力逻辑
   const updateResistance = useCallback(async (level: number) => {
@@ -213,8 +217,10 @@ export default function App() {
             step="1"
             value={uiResistance}
             onChange={(e) => setUiResistance(parseInt(e.target.value))}
-            onMouseUp={() => updateResistance(uiResistance)}
-            onTouchEnd={() => updateResistance(uiResistance)}
+            onMouseDown={() => setIsDragging(true)}
+            onTouchStart={() => setIsDragging(true)}
+            onMouseUp={() => { setIsDragging(false); updateResistance(uiResistance); }}
+            onTouchEnd={() => { setIsDragging(false); updateResistance(uiResistance); }}
             className="w-full h-3 bg-zinc-800 rounded-full appearance-none accent-amber-500 mb-10 cursor-pointer"
           />
 
