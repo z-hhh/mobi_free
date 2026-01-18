@@ -45,16 +45,29 @@ export const useBluetooth = () => {
       let device: BluetoothDevice;
       try {
         log(`Requesting device (Filter: ${FTMS_SERVICE_UUID})...`);
-        device = await api.requestDevice({
+
+        // Bluefy 特殊处理：如果服务已经在 filters 中，不要在 optionalServices 重复添加
+        // 否则会抛出 Error 2 或解析错误
+        const isBluefy = 'setScreenDimEnabled' in navigator.bluetooth;
+        const options: RequestDeviceOptions = {
           filters: [{ services: [FTMS_SERVICE_UUID] }],
-          optionalServices: [FTMS_SERVICE_UUID]
-        });
+        };
+
+        if (!isBluefy) {
+          options.optionalServices = [FTMS_SERVICE_UUID];
+        } else {
+          log("Bluefy detected: skipping optionalServices to avoid duplication bug");
+        }
+
+        device = await api.requestDevice(options);
       } catch (e) {
         log(`Standard request failed: ${e}`);
         const isNotFound = e instanceof Error && e.name === 'NotFoundError';
         if (!isNotFound) throw e;
 
         log("Trying acceptAllDevices...");
+        // acceptAllDevices 必须要有 optionalServices 才能访问对应服务，
+        // Bluefy 在 acceptAllDevices 模式下通常似乎工作正常，或者我们保留原逻辑以防万一
         device = await api.requestDevice({
           acceptAllDevices: true,
           optionalServices: [FTMS_SERVICE_UUID]
