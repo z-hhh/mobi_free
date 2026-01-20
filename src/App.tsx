@@ -14,7 +14,8 @@ import {
   MapPin,
   Github,
   Heart,
-  X
+  X,
+  MessageCircle
 } from 'lucide-react';
 import { useBluetooth } from './hooks/useBluetooth';
 import { useWakeLock } from './hooks/useWakeLock';
@@ -73,6 +74,7 @@ export default function App() {
   const [uiResistance, setUiResistance] = useState(10);
   const [ignoreRemoteUpdatesUntil, setIgnoreRemoteUpdatesUntil] = useState(0);
   const [showDonation, setShowDonation] = useState(false);
+  const [showFeedback, setShowFeedback] = useState(false);
 
   const [isDragging, setIsDragging] = useState(false);
 
@@ -294,6 +296,13 @@ export default function App() {
             GitHub
           </a>
           <button
+            onClick={() => setShowFeedback(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-zinc-800 hover:bg-zinc-700 rounded-full transition-all text-sm font-bold text-zinc-300 hover:text-white"
+          >
+            <MessageCircle size={16} />
+            问题反馈
+          </button>
+          <button
             onClick={() => setShowDonation(true)}
             className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 rounded-full transition-all text-sm font-bold text-white shadow-lg hover:shadow-xl"
           >
@@ -338,6 +347,39 @@ export default function App() {
             </div>
             <p className="text-zinc-600 text-xs text-center mt-4">
               使用支付宝扫码赞助
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* 反馈弹窗 */}
+      {showFeedback && (
+        <div
+          className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+          onClick={() => setShowFeedback(false)}
+        >
+          <div
+            className="bg-zinc-900 rounded-3xl p-8 max-w-sm w-full border border-white/10 shadow-2xl relative"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={() => setShowFeedback(false)}
+              className="absolute top-4 right-4 text-zinc-500 hover:text-white transition-colors"
+            >
+              <X size={24} />
+            </button>
+            <h3 className="text-2xl font-black mb-2 text-center">问题反馈</h3>
+            <p className="text-zinc-500 text-sm text-center mb-6">
+              加入 QQ 群反馈问题或交流
+            </p>
+            <div className="bg-zinc-800 p-6 rounded-2xl text-center">
+              <div className="text-zinc-400 text-sm mb-2">QQ 群号</div>
+              <div className="text-3xl font-black text-white tracking-widest select-all">
+                1073767295
+              </div>
+            </div>
+            <p className="text-zinc-600 text-xs text-center mt-4">
+              点击群号可复制
             </p>
           </div>
         </div>
