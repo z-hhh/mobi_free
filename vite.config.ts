@@ -1,5 +1,6 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import { VitePWA } from 'vite-plugin-pwa'
 import { execSync } from 'child_process'
 
 // 获取 Commit Hash
@@ -26,7 +27,31 @@ export default defineConfig({
     if (!isCI || !repo) return '/'
     return repo.endsWith('.github.io') ? '/' : `/${repo}/`
   })(),
-  plugins: [react()],
+  plugins: [
+    react(),
+    VitePWA({
+      registerType: 'autoUpdate',
+      includeAssets: ['pwa-192x192.png', 'pwa-512x512.png'],
+      manifest: {
+        name: 'Mobi Free',
+        short_name: 'MobiFree',
+        description: 'Free fitness for everyone',
+        theme_color: '#ffffff',
+        icons: [
+          {
+            src: 'pwa-192x192.png',
+            sizes: '192x192',
+            type: 'image/png'
+          },
+          {
+            src: 'pwa-512x512.png',
+            sizes: '512x512',
+            type: 'image/png'
+          }
+        ]
+      }
+    })
+  ],
   server: {
     host: '0.0.0.0', // Listens on all interfaces
     // OR
