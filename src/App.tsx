@@ -314,7 +314,7 @@ export default function App() {
           Powered by Web Bluetooth API & Open Source
         </p>
         <p className="text-zinc-800 text-[9px] font-mono text-center mt-2 opacity-50">
-          Build: {__BUILD_TIME__} | Commit: {__COMMIT_HASH__}
+          v{__APP_VERSION__} | Build: {__BUILD_TIME__} | Commit: {__COMMIT_HASH__}
         </p>
       </footer>
 
