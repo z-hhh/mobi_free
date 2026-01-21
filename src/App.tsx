@@ -307,7 +307,7 @@ export default function App() {
             className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 rounded-full transition-all text-sm font-bold text-white shadow-lg hover:shadow-xl"
           >
             <Heart size={16} fill="currentColor" />
-            捐助作者
+            捐助项目
           </button>
         </div>
         <p className="text-zinc-700 text-[10px] font-bold uppercase tracking-[0.2em] text-center">
