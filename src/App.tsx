@@ -162,39 +162,39 @@ export default function App() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <StatCard
             title="瞬时功率"
-            value={stats.instantPower}
+            value={stats.instantPower ?? 0}
             unit="W"
             icon={<Zap className="text-amber-500 w-4 h-4" />}
             highlight
           />
           <StatCard
             title="实时踏频"
-            value={stats.instantCadence}
+            value={stats.instantCadence ?? 0}
             unit="RPM"
             icon={<RotateCcw className="text-blue-400 w-4 h-4" />}
           />
           <StatCard
             title="即时速度"
-            value={stats.instantSpeed.toFixed(1)}
+            value={(stats.instantSpeed ?? 0).toFixed(1)}
             unit="KM/H"
             icon={<Gauge className="text-emerald-400 w-4 h-4" />}
           />
 
           <StatCard
             title="运动时长"
-            value={formatTime(stats.elapsedTime)}
+            value={formatTime(stats.elapsedTime ?? 0)}
             unit=""
             icon={<Timer className="text-purple-400 w-4 h-4" />}
           />
           <StatCard
             title="消耗热量"
-            value={stats.kcal.toFixed(0)}
+            value={(stats.kcal ?? 0).toFixed(0)}
             unit="KCAL"
             icon={<Flame className="text-orange-500 w-4 h-4" />}
           />
           <StatCard
             title="骑行距离"
-            value={(stats.totalDistance / 1000).toFixed(2)}
+            value={((stats.totalDistance ?? 0) / 1000).toFixed(2)}
             unit="KM"
             icon={<MapPin className="text-pink-400 w-4 h-4" />}
           />
