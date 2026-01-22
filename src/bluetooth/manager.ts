@@ -11,11 +11,11 @@ export class BluetoothManager {
     new MobiV1Protocol(),
     new HuanTongProtocol()
   ];
-  
+
   private device: BluetoothDevice | null = null;
   private activeProtocol: BluetoothProtocol | null = null;
 
-  constructor() {}
+  constructor() { }
 
   async connect(): Promise<string> { // returns protocol name
     const ftmsUUID = '00001826-0000-1000-8000-00805f9b34fb';
@@ -34,22 +34,24 @@ export class BluetoothManager {
       ],
       optionalServices: allServiceUUIDs
     };
-    
+
     // Bluefy handling (simplified)
-    if ('setScreenDimEnabled' in navigator.bluetooth) {
-       delete options.optionalServices;
+    const isBluefy = /bluefy/i.test(navigator.userAgent);
+    if (isBluefy) {
+      // Bluefy has issues with optionalServices in some versions or specific contexts
+      delete options.optionalServices;
     }
 
     try {
       this.device = await navigator.bluetooth.requestDevice(options);
-      
+
       const server = await this.device.gatt?.connect();
       if (!server) throw new Error('GATT Server connection failed');
 
       // Protocol Detection
       const services = await server.getPrimaryServices();
       const serviceUUIDs = services.map(s => s.uuid);
-      
+
       console.log('Discovered services:', serviceUUIDs);
 
       this.activeProtocol = this.protocols.find(p => p.isSupported(serviceUUIDs)) || null;
@@ -60,7 +62,7 @@ export class BluetoothManager {
 
       console.log(`Selected Protocol: ${this.activeProtocol.name}`);
       await this.activeProtocol.connect(server);
-      
+
       this.device.addEventListener('gattserverdisconnected', this.onDisconnected.bind(this));
 
       return this.activeProtocol.name;
@@ -95,7 +97,7 @@ export class BluetoothManager {
     this.activeProtocol = null;
     // Dispatch event or callback if needed
   }
-  
+
   isConnected(): boolean {
     return !!(this.device?.gatt?.connected && this.activeProtocol);
   }
