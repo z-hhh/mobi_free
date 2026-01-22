@@ -60,5 +60,6 @@ export default defineConfig({
   define: {
     __BUILD_TIME__: JSON.stringify(new Date().toLocaleString()),
     __COMMIT_HASH__: JSON.stringify(commitHash),
+    __APP_VERSION__: JSON.stringify(process.env.npm_package_version || '0.0.0'),
   },
 })
