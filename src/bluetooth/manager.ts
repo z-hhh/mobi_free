@@ -18,6 +18,9 @@ export class BluetoothManager {
   constructor() { }
 
   async connect(): Promise<string> { // returns protocol name
+    if (!navigator.bluetooth) {
+      throw new Error('您的浏览器不支持蓝牙功能。安卓请使用 Chrome/Edge，iOS 请使用 Bluefy APP。');
+    }
     const ftmsUUID = '00001826-0000-1000-8000-00805f9b34fb';
     const mobiV2UUID = '00008800-0000-1000-8000-00805f9b34fb';
     const mobiV1UUID = '0000ffe0-0000-1000-8000-00805f9b34fb';
