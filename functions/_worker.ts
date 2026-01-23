@@ -1,8 +1,7 @@
-import { AnalyticsEngineDataset, Fetcher } from '@cloudflare/workers-types';
+import { AnalyticsEngineDataset } from '@cloudflare/workers-types';
 
 interface Env {
     ANALYTICS: AnalyticsEngineDataset;
-    ASSETS: Fetcher;
 }
 
 interface AnalyticsPayload {
@@ -19,12 +18,8 @@ export default {
     async fetch(request: Request, env: Env): Promise<Response> {
         const url = new URL(request.url);
 
-        // DEBUG: Log all env keys to see what bindings are available
-        console.log("DEBUG: Available env keys:", Object.keys(env || {}));
-        console.log("DEBUG: env.ASSETS exists:", !!env?.ASSETS);
-        console.log("DEBUG: Request URL:", url.pathname);
-
-        // API Route: /api/analytics
+        // Only handle /api/analytics - all other routes should NOT reach here
+        // if run_worker_first is configured correctly
         if (url.pathname === '/api/analytics' && request.method === 'POST') {
             try {
                 const data = await request.json() as AnalyticsPayload;
@@ -52,12 +47,8 @@ export default {
             }
         }
 
-        // Fallback: Serve Static Assets - with safety check
-        if (!env?.ASSETS) {
-            console.error("ERROR: env.ASSETS is undefined! Available bindings:", Object.keys(env || {}));
-            return new Response("Static asset serving not available - ASSETS binding missing", { status: 500 });
-        }
-
-        return env.ASSETS.fetch(request as unknown as Parameters<typeof env.ASSETS.fetch>[0]) as unknown as Promise<Response>;
+        // For any other request that reaches here, return 404
+        // This shouldn't happen if assets are configured correctly
+        return new Response("Not Found", { status: 404 });
     }
 };
