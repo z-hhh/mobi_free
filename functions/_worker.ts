@@ -18,17 +18,25 @@ export default {
     async fetch(request: Request, env: Env): Promise<Response> {
         const url = new URL(request.url);
 
-        // Only handle /api/analytics - all other routes should NOT reach here
-        // if run_worker_first is configured correctly
+        // Only handle /api/analytics
         if (url.pathname === '/api/analytics' && request.method === 'POST') {
             try {
                 const data = await request.json() as AnalyticsPayload;
+                console.log("DEBUG: Received data:", JSON.stringify(data));
 
                 if (!data.type || !data.version) {
                     return new Response("Missing required fields: type, version", { status: 400 });
                 }
 
-                env.ANALYTICS.writeDataPoint({
+                console.log("DEBUG: env.ANALYTICS exists:", !!env?.ANALYTICS);
+                console.log("DEBUG: env.ANALYTICS type:", typeof env?.ANALYTICS);
+
+                if (!env?.ANALYTICS) {
+                    console.error("ERROR: ANALYTICS binding is undefined!");
+                    return new Response("ANALYTICS binding not configured", { status: 500 });
+                }
+
+                const point = {
                     indexes: [data.version, data.type],
                     blobs: [
                         data.userAgent || request.headers.get("User-Agent") || "Unknown",
@@ -39,16 +47,20 @@ export default {
                         data.duration || 0,
                         data.metricValue || 0,
                     ],
-                });
+                };
+
+                console.log("DEBUG: Writing data point:", JSON.stringify(point));
+                env.ANALYTICS.writeDataPoint(point);
+                console.log("DEBUG: writeDataPoint called successfully");
 
                 return new Response("OK", { status: 200 });
-            } catch {
-                return new Response("Error processing analytics", { status: 500 });
+            } catch (err) {
+                const error = err as Error;
+                console.error("ERROR:", error.message, error.stack);
+                return new Response(`Error: ${error.message}`, { status: 500 });
             }
         }
 
-        // For any other request that reaches here, return 404
-        // This shouldn't happen if assets are configured correctly
         return new Response("Not Found", { status: 404 });
     }
 };
