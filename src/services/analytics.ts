@@ -6,6 +6,10 @@ const APP_VERSION = packageJson.version;
 declare const __CF_PAGES__: boolean;
 const ANALYTICS_ENABLED = typeof __CF_PAGES__ !== 'undefined' && __CF_PAGES__;
 
+// Debug log - remove after testing
+console.log('[Analytics] __CF_PAGES__:', typeof __CF_PAGES__ !== 'undefined' ? __CF_PAGES__ : 'undefined');
+console.log('[Analytics] ANALYTICS_ENABLED:', ANALYTICS_ENABLED);
+
 interface AnalyticsData {
     userAgent?: string;
     errorDetails?: string;
@@ -16,6 +20,8 @@ interface AnalyticsData {
 }
 
 export const logEvent = async (type: string, data: AnalyticsData = {}) => {
+    console.log('[Analytics] logEvent called:', type, 'enabled:', ANALYTICS_ENABLED);
+
     // Skip analytics if not enabled
     if (!ANALYTICS_ENABLED) {
         return;
