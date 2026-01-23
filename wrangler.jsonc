@@ -10,5 +10,11 @@
             "binding": "ANALYTICS",
             "dataset": "mobi_free_events"
         }
-    ]
+    ],
+    "observability": {
+        "logs": {
+            "enabled": false,
+            "invocation_logs": true
+        }
+    }
 }
