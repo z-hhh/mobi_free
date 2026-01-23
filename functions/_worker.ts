@@ -19,6 +19,11 @@ export default {
     async fetch(request: Request, env: Env): Promise<Response> {
         const url = new URL(request.url);
 
+        // DEBUG: Log all env keys to see what bindings are available
+        console.log("DEBUG: Available env keys:", Object.keys(env || {}));
+        console.log("DEBUG: env.ASSETS exists:", !!env?.ASSETS);
+        console.log("DEBUG: Request URL:", url.pathname);
+
         // API Route: /api/analytics
         if (url.pathname === '/api/analytics' && request.method === 'POST') {
             try {
@@ -47,7 +52,12 @@ export default {
             }
         }
 
-        // Fallback: Serve Static Assets
+        // Fallback: Serve Static Assets - with safety check
+        if (!env?.ASSETS) {
+            console.error("ERROR: env.ASSETS is undefined! Available bindings:", Object.keys(env || {}));
+            return new Response("Static asset serving not available - ASSETS binding missing", { status: 500 });
+        }
+
         return env.ASSETS.fetch(request as unknown as Parameters<typeof env.ASSETS.fetch>[0]) as unknown as Promise<Response>;
     }
 };
