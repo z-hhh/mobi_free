@@ -2,12 +2,12 @@ import packageJson from '../../package.json';
 
 const APP_VERSION = packageJson.version;
 
-// Enable analytics only on Cloudflare Pages build (CF_PAGES=1)
-declare const __CF_PAGES__: boolean;
-const ANALYTICS_ENABLED = typeof __CF_PAGES__ !== 'undefined' && __CF_PAGES__;
+// Enable analytics only on Cloudflare build
+declare const __IS_CLOUDFLARE_BUILD__: boolean;
+const ANALYTICS_ENABLED = typeof __IS_CLOUDFLARE_BUILD__ !== 'undefined' && __IS_CLOUDFLARE_BUILD__;
 
 // Debug log - remove after testing
-console.log('[Analytics] __CF_PAGES__:', typeof __CF_PAGES__ !== 'undefined' ? __CF_PAGES__ : 'undefined');
+console.log('[Analytics] __IS_CLOUDFLARE_BUILD__:', typeof __IS_CLOUDFLARE_BUILD__ !== 'undefined' ? __IS_CLOUDFLARE_BUILD__ : 'undefined');
 console.log('[Analytics] ANALYTICS_ENABLED:', ANALYTICS_ENABLED);
 
 interface AnalyticsData {

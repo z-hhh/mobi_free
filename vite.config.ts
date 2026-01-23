@@ -70,8 +70,8 @@ export default defineConfig(({ mode }) => {
       __BUILD_TIME__: JSON.stringify(new Date().toLocaleString()),
       __COMMIT_HASH__: JSON.stringify(commitHash),
       __APP_VERSION__: JSON.stringify(env.npm_package_version || '0.0.0'),
-      // Use env.CF_PAGES because loadEnv makes it available if it exists
-      __CF_PAGES__: JSON.stringify(env.CF_PAGES === '1'),
+      // Use WORKERS_CI to detect Cloudflare Build environment
+      __IS_CLOUDFLARE_BUILD__: JSON.stringify(env.WORKERS_CI === '1'),
     },
   }
 })
