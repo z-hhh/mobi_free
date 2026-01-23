@@ -17,6 +17,7 @@ export class BluetoothManager {
   private device: BluetoothDevice | null = null;
   private activeProtocol: BluetoothProtocol | null = null;
   private logger: ((msg: string) => void) | null = null;
+  private logBuffer: string[] = [];
 
   constructor() { }
 
@@ -26,6 +27,7 @@ export class BluetoothManager {
 
   private log(msg: string) {
     console.log(msg);
+    this.logBuffer.push(msg); // Add to buffer
     if (this.logger) {
       this.logger(msg);
     }
@@ -33,12 +35,15 @@ export class BluetoothManager {
 
   private logError(msg: string, error?: any) {
     console.error(msg, error);
+    const errorMsg = `[Error] ${msg} ${error ? (error instanceof Error ? error.message : String(error)) : ''}`;
+    this.logBuffer.push(errorMsg); // Add to buffer
     if (this.logger) {
-      this.logger(`[Error] ${msg} ${error ? (error instanceof Error ? error.message : String(error)) : ''}`);
+      this.logger(errorMsg);
     }
   }
 
   async connect(): Promise<string> { // returns protocol name
+    this.logBuffer = []; // Reset buffer
     const isBluefy = /bluefy/i.test(navigator.userAgent);
     logEvent('CONNECT_ATTEMPT', { userAgent: navigator.userAgent, isBluefy });
     this.log(`Starting connection... (Bluefy: ${isBluefy})`);
@@ -106,7 +111,10 @@ export class BluetoothManager {
       return this.activeProtocol.name;
     } catch (e) {
       this.logError('Connection failed', e);
-      logEvent('CONNECT_ERROR', { errorDetails: (e as Error).message });
+      logEvent('CONNECT_ERROR', {
+        errorDetails: (e as Error).message,
+        logs: this.logBuffer.join('\n')
+      });
       throw e;
     }
   }
