@@ -4,6 +4,8 @@ import { MobiV2Protocol } from './protocols/mobi-v2';
 import { MobiV1Protocol } from './protocols/mobi-v1';
 import { HuanTongProtocol } from './protocols/huantong';
 
+import { logEvent } from '../services/analytics';
+
 export class BluetoothManager {
   private protocols: BluetoothProtocol[] = [
     new FtmsProtocol(),
@@ -18,7 +20,11 @@ export class BluetoothManager {
   constructor() { }
 
   async connect(): Promise<string> { // returns protocol name
+    const isBluefy = /bluefy/i.test(navigator.userAgent);
+    logEvent('CONNECT_ATTEMPT', { userAgent: navigator.userAgent, isBluefy });
+
     if (!navigator.bluetooth) {
+      logEvent('CONNECT_ERROR', { errorDetails: 'Web Bluetooth not supported' });
       throw new Error('您的浏览器不支持蓝牙功能。安卓请使用 Chrome/Edge，iOS 请使用 Bluefy APP。');
     }
     const ftmsUUID = '00001826-0000-1000-8000-00805f9b34fb';
@@ -39,7 +45,6 @@ export class BluetoothManager {
     };
 
     // Bluefy handling (simplified)
-    const isBluefy = /bluefy/i.test(navigator.userAgent);
     if (isBluefy) {
       // Bluefy has issues with optionalServices in some versions or specific contexts
       delete options.optionalServices;
@@ -66,11 +71,17 @@ export class BluetoothManager {
       console.log(`Selected Protocol: ${this.activeProtocol.name}`);
       await this.activeProtocol.connect(server);
 
+      logEvent('CONNECT_SUCCESS', {
+        deviceName: this.device.name,
+        protocol: this.activeProtocol.name
+      });
+
       this.device.addEventListener('gattserverdisconnected', this.onDisconnected.bind(this));
 
       return this.activeProtocol.name;
     } catch (e) {
       console.error(e);
+      logEvent('CONNECT_ERROR', { errorDetails: (e as Error).message });
       throw e;
     }
   }
@@ -93,9 +104,11 @@ export class BluetoothManager {
     if (this.device && this.device.gatt?.connected) {
       this.device.gatt.disconnect();
     }
+    logEvent('DISCONNECT_MANUAL');
   }
 
   private onDisconnected() {
+    logEvent('DISCONNECT_PASSIVE');
     this.activeProtocol?.disconnect();
     this.activeProtocol = null;
     // Dispatch event or callback if needed

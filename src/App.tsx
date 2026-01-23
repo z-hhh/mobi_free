@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { useBluetooth } from './hooks/useBluetooth';
 import { useWakeLock } from './hooks/useWakeLock';
+import { logEvent } from './services/analytics';
 import alipayQR from './assets/alipay.jpg';
 
 
@@ -77,6 +78,10 @@ export default function App() {
   const [showFeedback, setShowFeedback] = useState(false);
 
   const [isDragging, setIsDragging] = useState(false);
+
+  useEffect(() => {
+    logEvent('APP_OPEN');
+  }, []);
 
   // 初始连接时同步机器阻力值
   useEffect(() => {
