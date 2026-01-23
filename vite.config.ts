@@ -3,33 +3,31 @@ import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 import { execSync } from 'child_process'
 
-// 获取 Commit Hash
-const getCommitHash = () => {
-  try {
-    // Cloudflare Pages build environment
-    if (process.env.CF_PAGES_COMMIT_SHA) {
-      return process.env.CF_PAGES_COMMIT_SHA.substring(0, 7);
-    }
-    // Local git environment
-    return execSync('git rev-parse --short HEAD').toString().trim();
-  } catch (e) {
-    return 'unknown';
-  }
-};
-
-const commitHash = getCommitHash();
-
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => {
   // Load env file based on `mode` in the current working directory.
   // Set the third parameter to '' to load all env regardless of the `VITE_` prefix.
   const env = loadEnv(mode, process.cwd(), '')
 
-  // Debug: log environment variables during build
-  console.log('[Vite Build] Mode:', mode);
-  console.log('[Vite Build] env:', env);
-  console.log('[Vite Build] CF_PAGES:', env.CF_PAGES);
-  console.log('[Vite Build] CF_PAGES_COMMIT_SHA:', env.CF_PAGES_COMMIT_SHA);
+  // 获取 Commit Hash
+  const getCommitHash = () => {
+    try {
+      // Cloudflare Pages build environment
+      if (env.CF_PAGES_COMMIT_SHA) {
+        return env.CF_PAGES_COMMIT_SHA.substring(0, 7);
+      }
+      // GitHub Actions build environment
+      if (env.GITHUB_SHA) {
+        return env.GITHUB_SHA.substring(0, 7);
+      }
+      // Local git environment
+      return execSync('git rev-parse --short HEAD').toString().trim();
+    } catch (e) {
+      return 'unknown';
+    }
+  };
+
+  const commitHash = getCommitHash();
 
   return {
     base: (() => {
