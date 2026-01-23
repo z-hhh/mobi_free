@@ -37,8 +37,9 @@ export default {
                 }
 
                 const point = {
-                    indexes: [data.version, data.type],
+                    indexes: [data.type],  // Only 1 index allowed
                     blobs: [
+                        data.version,  // Move version to blobs
                         data.userAgent || request.headers.get("User-Agent") || "Unknown",
                         data.errorDetails || "",
                         data.deviceName || "",
