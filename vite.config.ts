@@ -57,10 +57,17 @@ export default defineConfig({
     // OR
     // host: true, // Also listens on all interfaces
   },
-  define: {
-    __BUILD_TIME__: JSON.stringify(new Date().toLocaleString()),
-    __COMMIT_HASH__: JSON.stringify(commitHash),
-    __APP_VERSION__: JSON.stringify(process.env.npm_package_version || '0.0.0'),
-    __CF_PAGES__: JSON.stringify(process.env.CF_PAGES === '1'),
-  },
+  define: (() => {
+    // Debug: log environment variables during build
+    console.log('[Vite Build] CF_PAGES:', process.env.CF_PAGES);
+    console.log('[Vite Build] CF_PAGES === "1":', process.env.CF_PAGES === '1');
+    console.log('[Vite Build] All CF_* env vars:', Object.keys(process.env).filter(k => k.startsWith('CF_')));
+
+    return {
+      __BUILD_TIME__: JSON.stringify(new Date().toLocaleString()),
+      __COMMIT_HASH__: JSON.stringify(commitHash),
+      __APP_VERSION__: JSON.stringify(process.env.npm_package_version || '0.0.0'),
+      __CF_PAGES__: JSON.stringify(process.env.CF_PAGES === '1'),
+    };
+  })(),
 })
