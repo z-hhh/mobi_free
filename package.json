@@ -1,7 +1,7 @@
 {
   "name": "mobi_free",
   "private": true,
-  "version": "1.1.0",
+  "version": "1.2.1",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -17,6 +17,7 @@
     "tailwind-merge": "^1.14.0"
   },
   "devDependencies": {
+    "@cloudflare/workers-types": "^4.20260123.0",
     "@eslint/js": "^9.39.1",
     "@types/node": "^24.10.1",
     "@types/react": "^19.2.5",
