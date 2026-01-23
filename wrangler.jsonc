@@ -1,9 +1,7 @@
 {
     "name": "mobi-free",
     "compatibility_date": "2025-12-25",
-    "assets": {
-        "directory": "./dist"
-    },
+    "pages_build_output_dir": "./dist",
     "analytics_engine_datasets": [
         {
             "binding": "ANALYTICS",
