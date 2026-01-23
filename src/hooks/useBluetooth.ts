@@ -23,10 +23,15 @@ export const useBluetooth = () => {
     elapsedTime: 0
   });
 
-  const log = (msg: string) => {
+  const log = useCallback((msg: string) => {
     console.log(msg);
-    setLogs(prev => [...prev.slice(-20), `${new Date().toLocaleTimeString()} - ${msg}`]);
-  };
+    setLogs(prev => [...prev.slice(-40), `${new Date().toLocaleTimeString()} - ${msg}`]);
+  }, []);
+
+  // 注入 Logger 到 Manager
+  useEffect(() => {
+    managerRef.current.setLogger(log);
+  }, [log]);
 
   // 本地计时器逻辑
   useEffect(() => {
