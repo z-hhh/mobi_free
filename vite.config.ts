@@ -27,6 +27,7 @@ export default defineConfig(({ mode }) => {
 
   // Debug: log environment variables during build
   console.log('[Vite Build] Mode:', mode);
+  console.log('[Vite Build] env:', env);
   console.log('[Vite Build] CF_PAGES:', env.CF_PAGES);
   console.log('[Vite Build] CF_PAGES_COMMIT_SHA:', env.CF_PAGES_COMMIT_SHA);
 
