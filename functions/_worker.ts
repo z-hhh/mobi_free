@@ -10,6 +10,8 @@ interface AnalyticsPayload {
     userAgent?: string;
     errorDetails?: string;
     deviceName?: string;
+    protocol?: string;
+    isBluefy?: boolean;
     duration?: number;
     metricValue?: number;
 }
@@ -22,27 +24,24 @@ export default {
         if (url.pathname === '/api/analytics' && request.method === 'POST') {
             try {
                 const data = await request.json() as AnalyticsPayload;
-                console.log("DEBUG: Received data:", JSON.stringify(data));
 
                 if (!data.type || !data.version) {
                     return new Response("Missing required fields: type, version", { status: 400 });
                 }
 
-                console.log("DEBUG: env.ANALYTICS exists:", !!env?.ANALYTICS);
-                console.log("DEBUG: env.ANALYTICS type:", typeof env?.ANALYTICS);
-
                 if (!env?.ANALYTICS) {
-                    console.error("ERROR: ANALYTICS binding is undefined!");
                     return new Response("ANALYTICS binding not configured", { status: 500 });
                 }
 
                 const point = {
-                    indexes: [data.type],  // Only 1 index allowed
+                    indexes: [data.type],
                     blobs: [
-                        data.version,  // Move version to blobs
-                        data.userAgent || request.headers.get("User-Agent") || "Unknown",
+                        data.version,
+                        data.userAgent || request.headers.get("User-Agent") || "",
                         data.errorDetails || "",
                         data.deviceName || "",
+                        data.protocol || "",
+                        data.isBluefy !== undefined ? String(data.isBluefy) : "",
                     ],
                     doubles: [
                         data.duration || 0,
