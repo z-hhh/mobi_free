@@ -15,9 +15,13 @@ interface AnalyticsPayload {
     metricValue?: number;
 }
 
+
 export default {
     async fetch(request: Request, env: Env, ctx: any): Promise<Response> {
         const url = new URL(request.url);
+
+        // Debug: Log available bindings
+        // console.log("Env keys:", Object.keys(env));
 
         // API Route: /api/analytics
         if (url.pathname === '/api/analytics' && request.method === 'POST') {
