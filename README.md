@@ -1,24 +1,42 @@
 # MOBI-FREE 🚴
 
-一个基于 Web Bluetooth API 的莫比椭圆机控制应用，无需安装任何 App，直接在浏览器中使用。（推荐部署自己的版本）
+一个基于 Web Bluetooth API 的椭圆机控制台，支持多种蓝牙协议。无需安装 App，支持 PWA，这也是一个带有后台服务的完整 Web 应用示例。
 
-## ✨ 功能特性
+## 功能特性
 
-- 🔗 **无线连接**：通过蓝牙 FTMS 协议连接椭圆机
-- 📊 **实时数据**：显示速度、踏频、功率、距离、热量、时长等运动数据
-- 🎚️ **阻力调节**：支持 10-24 档阻力实时调节
-- 📱 **跨平台**：支持桌面和移动设备浏览器
-- 🎨 **现代 UI**：简洁美观的深色主题界面
+- **多协议支持**：支持 FTMS 标准协议及莫比 V1/V2、环通等私有协议
+- **实时数据**：显示速度、踏频、功率、距离、卡路里、阻力等数据
+- **阻力控制**：支持 10-24 档阻力调节（针对莫比机型优化）
+- **PWA 支持**：可安装到桌面或手机主屏幕，支持离线加载
+- **匿名统计**：集成了 Cloudflare Analytics Engine (仅在 Cloudflare 环境启用)
 
-## 🚀 快速开始
+## 支持协议
+
+应用会自动根据设备广播的服务 UUID 识别协议：
+
+- **FTMS (Fitness Machine Service)**: 标准蓝牙健身设备协议
+- **Mobi V2**: 莫比新款机型私有协议
+- **Mobi V1**: 莫比旧款机型私有协议
+- **HuanTong**: 环通仪表盘协议
+
+## 使用说明
 
 ### 环境要求
 
-- Node.js 16+
-- 支持 Web Bluetooth 的浏览器（Chrome、Edge、Opera，iOS 用户可使用 Bluefy）
-- HTTPS 或 localhost 环境
+需要支持 Web Bluetooth API 的浏览器：
+- **Android/Windows/Mac**: Chrome, Edge
+- **iOS/iPadOS**: 必须使用 [Bluefy](https://apps.apple.com/us/app/bluefy-web-ble-browser/id1492822055) 浏览器 (Safari 不支持 Web Bluetooth)
 
-### 安装运行
+### 操作步骤
+
+1. 确保椭圆机已通电且未连接其他 App
+2. 打开应用点击右上角蓝牙图标
+3. 在弹出的设备列表中选择你的设备
+4. 连接成功后即可看到实时数据并控制阻力
+
+## 开发指南
+
+### 本地运行
 
 ```bash
 # 安装依赖
@@ -26,144 +44,49 @@ npm install
 
 # 启动开发服务器
 npm run dev
+```
 
+### 构建
+
+```bash
 # 构建生产版本
 npm run build
 ```
 
-### 使用说明
+## 部署
 
-1. 确保椭圆机已开机且未被其他应用连接
-2. 在浏览器中打开应用
-3. 点击「连接椭圆机」按钮
-4. 选择你的设备并配对
-5. 开始运动，实时查看数据并调节阻力
+### Cloudflare Pages (推荐)
 
-## 🌐 部署到 GitHub Pages
+本项目专门针对 Cloudflare Pages 进行了优化，包含后端统计服务。
 
-### Fork 并部署到自己的 GitHub Pages
+1. Fork 本仓库
+2. 在 Cloudflare Dashboard 创建 Pages 项目并连接 Git 仓库
+3. 构建配置会自动从 `wrangler.jsonc` 读取，无需额外配置
+4. 部署完成后，应用会自动启用后端统计服务
 
-1. **Fork 本仓库**
-   - 点击页面右上角的 **Fork** 按钮
-   - 将项目 fork 到你的 GitHub 账号
+### GitHub Pages / 其他静态托管
 
-2. **启用 GitHub Pages**
-   - 进入你 fork 的仓库
-   - 点击 **Settings** → **Pages**
-   - 在 **Source** 下选择 **GitHub Actions**
+也可以部署为纯静态网站，虽然没有后端统计功能，但核心控制功能完全可用。
 
-3. **创建部署工作流**
-   - 在你的仓库中创建文件 `.github/workflows/deploy.yml`
-   - 复制以下内容：
+1. 配置构建命令为 `npm run build`
+2. 配置发布目录为 `dist`
 
-```yaml
-name: Deploy to GitHub Pages
+## 环境变量
 
-on:
-  push:
-    branches: [ main ]
-  workflow_dispatch:
+- `VITE_ENABLE_ANALYTICS`: 用于本地强制启用统计 (可选，默认仅在 Cloudflare 构建环境启用)
+- `WORKERS_CI`: Cloudflare 构建环境标识
 
-permissions:
-  contents: read
-  pages: write
-  id-token: write
+## 技术栈
 
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 18
-          cache: 'npm'
-      - run: npm ci
-      - run: npm run build
-      - uses: actions/upload-pages-artifact@v3
-        with:
-          path: ./dist
+- **前端**: React, TypeScript, Vite, Tailwind CSS
+- **蓝牙**: Web Bluetooth API
+- **PWA**: vite-plugin-pwa
+- **后端**: Cloudflare Pages Functions, Workers Analytics Engine
 
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - id: deployment
-        uses: actions/deploy-pages@v4
-```
+## 交流反馈
 
-4. **推送代码**
-   - 提交并推送 `.github/workflows/deploy.yml` 文件
-   - GitHub Actions 会自动构建并部署
+QQ 群：1073767295
 
-5. **访问你的站点**
-   - 部署完成后，访问 `https://<你的用户名>.github.io/mobi_free`
-
-> **注意**：GitHub Pages 自动提供 HTTPS，满足 Web Bluetooth API 的要求。
-
-## 🌐 部署到 Cloudflare Pages
-
-项目已配置 `wrangler.jsonc`，可以直接部署。
-
-### 方式一：Git 集成（推荐）
-
-1. 将代码推送到 GitHub
-2. 登录 [Cloudflare Dashboard](https://dash.cloudflare.com/)
-3. 进入 **Workers & Pages** → **Create application** → **Pages** → **Connect to Git**
-4. 选择你的仓库
-5. Cloudflare 会自动检测 `wrangler.jsonc` 配置并部署
-
-### 方式二：命令行部署
-
-```bash
-# 构建项目
-npm run build
-
-# 部署（首次部署会创建项目）
-npx wrangler pages deploy
-```
-
-> **注意**：Cloudflare Pages 自动提供 HTTPS，满足 Web Bluetooth API 的要求。
-
-## 🛠️ 技术栈
-
-- **React** + **TypeScript**
-- **Vite** - 构建工具
-- **Web Bluetooth API** - 蓝牙通信
-- **FTMS 协议** - 健身设备标准协议
-- **Tailwind CSS** - 样式框架
-- **Lucide React** - 图标库
-
-## 📝 协议说明
-
-本项目实现了 FTMS (Fitness Machine Service) 蓝牙协议，支持：
-- Cross Trainer Data (0x2ACE) - 运动数据读取
-- Fitness Machine Control Point (0x2AD9) - 设备控制
-
-### 特殊处理
-
-由于莫比椭圆机的非标准实现：
-- **读取阻力**：机器返回值需除以 10（如 240 → 24 档）
-- **写入阻力**：直接发送档位值（如设置 10 档发送 10）
-- **阻力范围**：限制为 10-24 档
-
-## 💬 问题反馈
-
-如果您在使用过程中遇到任何问题，或有任何建议，欢迎加入 QQ 群交流：
-
-**QQ 群号：1073767295**
-
-## 📄 许可证
+## 许可证
 
 MIT License
-
-## 🤝 贡献
-
-欢迎提交 Issue 和 Pull Request！
-
----
-
-**注意**：本项目仅供学习交流使用，与莫比官方无关。
