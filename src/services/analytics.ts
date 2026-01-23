@@ -2,6 +2,10 @@ import packageJson from '../../package.json';
 
 const APP_VERSION = packageJson.version;
 
+// Enable analytics only on Cloudflare build
+declare const __IS_CLOUDFLARE_BUILD__: boolean;
+const ANALYTICS_ENABLED = typeof __IS_CLOUDFLARE_BUILD__ !== 'undefined' && __IS_CLOUDFLARE_BUILD__;
+
 interface AnalyticsData {
     userAgent?: string;
     errorDetails?: string;
@@ -12,6 +16,11 @@ interface AnalyticsData {
 }
 
 export const logEvent = async (type: string, data: AnalyticsData = {}) => {
+    // Skip analytics if not enabled
+    if (!ANALYTICS_ENABLED) {
+        return;
+    }
+
     try {
         const payload = {
             type,
@@ -19,8 +28,6 @@ export const logEvent = async (type: string, data: AnalyticsData = {}) => {
             ...data,
         };
 
-        // Fire and forget, don't await strictly unless debugging
-        // Use keepalive: true to ensure request survives page navigations
         fetch('/api/analytics', {
             method: 'POST',
             headers: {
@@ -31,7 +38,6 @@ export const logEvent = async (type: string, data: AnalyticsData = {}) => {
         }).catch(err => console.error("Analytics error:", err));
 
     } catch (e) {
-        // Fail silently to not impact user experience
         console.warn("Failed to log analytics event", e);
     }
 };
