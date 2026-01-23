@@ -4,7 +4,10 @@
     "main": "worker.ts",
     "assets": {
         "directory": "./dist",
-        "binding": "ASSETS"
+        "binding": "ASSETS",
+        "run_worker_first": [
+            "/api/*"
+        ]
     },
     "analytics_engine_datasets": [
         {

@@ -1,8 +1,8 @@
-import { AnalyticsEngineDataset } from '@cloudflare/workers-types';
+import { AnalyticsEngineDataset, Fetcher } from '@cloudflare/workers-types';
 
 interface Env {
     ANALYTICS: AnalyticsEngineDataset;
-    ASSETS: { fetch: (request: Request) => Promise<Response> };
+    ASSETS: Fetcher;
 }
 
 interface AnalyticsPayload {
@@ -60,6 +60,6 @@ export default {
 
         // Fallback: Serve Static Assets
         // env.ASSETS is automatically provided by Workers with Assets
-        return env.ASSETS.fetch(request);
+        return await env.ASSETS.fetch(request as unknown as Parameters<typeof env.ASSETS.fetch>[0]) as unknown as Response;
     }
 };
