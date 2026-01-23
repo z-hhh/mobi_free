@@ -1,7 +1,15 @@
 {
     "name": "mobi-free",
     "compatibility_date": "2025-12-25",
-    "pages_build_output_dir": "./dist",
+    "main": "functions/_worker.ts",
+    "assets": {
+        "directory": "./dist",
+        "binding": "ASSETS",
+        "not_found_handling": "single-page-application",
+        "run_worker_first": [
+            "/api/*"
+        ]
+    },
     "analytics_engine_datasets": [
         {
             "binding": "ANALYTICS",
