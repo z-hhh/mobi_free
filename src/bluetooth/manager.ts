@@ -55,16 +55,23 @@ export class BluetoothManager {
     const ftmsUUID = '00001826-0000-1000-8000-00805f9b34fb';
     const mobiV2UUID = '00008800-0000-1000-8000-00805f9b34fb';
     const mobiV1UUID = '0000ffe0-0000-1000-8000-00805f9b34fb';
-    const huantongUUID = '0000fff0-0000-1000-8000-00805f9b34fb';
 
-    const allServiceUUIDs = [ftmsUUID, mobiV2UUID, mobiV1UUID, huantongUUID];
+    const huantongUUID = '0000fff0-0000-1000-8000-00805f9b34fb';
+    const mobiV1AltUUID = '0000ffc0-0000-1000-8000-00805f9b34fb';
+    const elliptical5UUID = '00002902-0000-1000-8000-00805f9b34fb';
+    const heartRateUUID = '0000180d-0000-1000-8000-00805f9b34fb';
+
+    const allServiceUUIDs = [ftmsUUID, mobiV2UUID, mobiV1UUID, huantongUUID, mobiV1AltUUID, elliptical5UUID, heartRateUUID];
 
     const options: RequestDeviceOptions = {
       filters: [
         { services: [ftmsUUID] },
         { services: [mobiV2UUID] },
         { services: [mobiV1UUID] },
-        { services: [huantongUUID] }
+        { services: [huantongUUID] },
+        { services: [mobiV1AltUUID] },
+        { services: [elliptical5UUID] },
+        { services: [heartRateUUID] }
       ],
       optionalServices: allServiceUUIDs
     };
