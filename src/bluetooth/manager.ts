@@ -63,7 +63,7 @@ export class BluetoothManager {
 
     const allServiceUUIDs = [ftmsUUID, mobiV2UUID, mobiV1UUID, huantongUUID, mobiV1AltUUID, elliptical5UUID, heartRateUUID];
 
-    const options: RequestDeviceOptions = {
+    let options: RequestDeviceOptions = {
       filters: [
         { services: [ftmsUUID] },
         { services: [mobiV2UUID] },
@@ -75,13 +75,15 @@ export class BluetoothManager {
         { namePrefix: 'MB' },
         { namePrefix: 'MOBI' }
       ],
-      optionalServices: allServiceUUIDs
+      optionalServices: allServiceUUIDs,
     };
 
     // Bluefy handling (simplified)
     if (isBluefy) {
       // Bluefy has issues with optionalServices in some versions or specific contexts
-      delete options.optionalServices;
+      options = {
+        acceptAllDevices: true
+      }
     }
 
     try {
