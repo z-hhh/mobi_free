@@ -71,7 +71,9 @@ export class BluetoothManager {
         { services: [huantongUUID] },
         { services: [mobiV1AltUUID] },
         { services: [elliptical5UUID] },
-        { services: [heartRateUUID] }
+        { services: [heartRateUUID] },
+        { namePrefix: 'MB' },
+        { namePrefix: 'MOBI' }
       ],
       optionalServices: allServiceUUIDs
     };
