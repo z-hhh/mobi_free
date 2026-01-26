@@ -99,9 +99,8 @@ export default function App() {
     }
   }, [stats.resistanceLevel, uiResistance, ignoreRemoteUpdatesUntil, isDragging]);
 
-  // 设置阻力逻辑
   const updateResistance = useCallback(async (level: number) => {
-    const safeLevel = Math.min(Math.max(level, 10), 24);
+    const safeLevel = Math.min(Math.max(level, 1), 24);
 
     try {
       // 立即更新 UI（乐观更新）
@@ -214,12 +213,12 @@ export default function App() {
                 L{uiResistance}
               </div>
             </div>
-            <div className="text-zinc-600 text-[10px] font-bold uppercase">范围: 10 - 24</div>
+            <div className="text-zinc-600 text-[10px] font-bold uppercase">范围: 1 - 24</div>
           </div>
 
           <input
             type="range"
-            min="10"
+            min="1"
             max="24"
             step="1"
             value={uiResistance}
@@ -237,7 +236,7 @@ export default function App() {
               <ControlButton onClick={() => handleManualAdjust(1)}><Plus /></ControlButton>
             </div>
             <div className="flex gap-2">
-              {[10, 16, 24].map(level => (
+              {[1, 12, 24].map(level => (
                 <button
                   key={level}
                   onClick={() => updateResistance(level)}
