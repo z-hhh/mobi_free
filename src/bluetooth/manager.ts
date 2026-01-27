@@ -114,7 +114,9 @@ export class BluetoothManager {
 
       logEvent('CONNECT_SUCCESS', {
         deviceName: this.device.name,
-        protocol: this.activeProtocol.name
+        deviceId: this.device.id,
+        protocol: this.activeProtocol.name,
+        serviceUUIDs: serviceUUIDs
       });
 
       this.device.addEventListener('gattserverdisconnected', this.onDisconnected.bind(this));
